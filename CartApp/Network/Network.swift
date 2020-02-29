@@ -17,6 +17,8 @@ class Network {
         AF.request(url).response { (response) in
            
             do {
+                
+                // For debugging purposes
                 if let data = response.data {
                     if printResponse == true {
                         if let JSONObject = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? [String: Any] {
@@ -25,7 +27,6 @@ class Network {
                     }
                     let decoder = JSONDecoder()
                     decoder.keyDecodingStrategy = .convertFromSnakeCase
-                    //print(String(data: data, encoding: .utf8))
                     let object = try decoder.decode(T.self, from: data)
                     completion(.success(object))
                 }
@@ -45,6 +46,8 @@ class Network {
             }
         }
     }
+    
+    
     
     
 }

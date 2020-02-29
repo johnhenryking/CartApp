@@ -18,16 +18,13 @@ class CartTableViewController: UITableViewController {
         retrieveOrder()
     }
     
-    var orderUrl = "https://gopuff-public.s3.amazonaws.com/dev-assignments/product/order.json"
-    var productsUrl = "https://prodcat.gopuff.com/api/products"
     
     func retrieveOrder() {
-        Network.fetch(orderUrl) { [unowned self] (result: Result<Order, Error>) in
+        Network.fetch(NetworkAPI.orderURL) { [unowned self] (result: Result<Order, Error>) in
             switch result {
             case .success(let order):
                 self.order = order
                 self.getProducts(for: order)
-                self.tableView.reloadData()
             case .failure(let error):
                 print(error.localizedDescription)
             }
@@ -35,17 +32,8 @@ class CartTableViewController: UITableViewController {
     }
     
     fileprivate func getProducts(for order: Order) {
-        guard let order = self.order else { return }
-        var ids = [Int]()
-        for product in order.cart.products {
-            ids.append(product.id)
-        }
-        let formattedArray = (ids.map{String($0)}).joined(separator: ",")
-        
-        let url = URL(string: productsUrl)?.appending("product_ids", value: formattedArray)
-        let finalUrl = url?.appending("location_id", value: "6").absoluteString
-        
-        Network.fetch(finalUrl!, printResponse: true) { (result: Result<Response, Error>) in
+        guard let url = order.cart.productsURL else { return }
+        Network.fetch(url, printResponse: false) { (result: Result<Response, Error>) in
             switch result {
             case .success(let response):
                 self.products = response.products
@@ -59,20 +47,39 @@ class CartTableViewController: UITableViewController {
     // MARK: -TABLEVIEW DELEGATE METHODS
     
     var reuseIdentifier = "cartCell"
+    var subtotalCellResueIdentifier = "subtotalCell"
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.products.count
+        switch section {
+        case 0: return 1
+        default: return self.products.count
+        }
+    }
+    
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return 2
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath)
-        let product = products[indexPath.row]
-        cell.textLabel?.text = product.name
-        cell.detailTextLabel?.text = product.parentCompany
-        cell.imageView?.setImage(with: product.images[0].small)
+        let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier(forCellAt: indexPath), for: indexPath)
+        
+        switch indexPath.section {
+        case 0:
+            guard let subtotalCell = cell as? SubtotalTableViewCell else { return cell }
+            subtotalCell.cart = order?.cart
+        default:
+            guard let cartCell = cell as? CartTableViewCell else { return cell }
+            cartCell.product = products[indexPath.row]
+        }
         return cell
     }
-
+    
+    fileprivate func reuseIdentifier(forCellAt indexPath: IndexPath) -> String {
+        switch indexPath.section {
+        case 0: return subtotalCellResueIdentifier
+        default: return reuseIdentifier
+        }
+    }
 
 }
 

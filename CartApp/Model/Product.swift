@@ -22,4 +22,12 @@ struct Product: Decodable {
     var parentCompany: String
     var kind: String
     
+    var priceName: String {
+        return "$\(price)"
+    }
+    
+    var thumbnail: String {
+        return images[0].thumb
+    }
+    
 }
